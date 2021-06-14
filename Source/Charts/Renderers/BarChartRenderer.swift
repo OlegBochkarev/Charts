@@ -43,7 +43,9 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
     ///
     /// The ````internal```` specifier is to allow subclasses (HorizontalBar) to populate the same array
     internal lazy var accessibilityOrderedElements: [[NSUIAccessibilityElement]] = accessibilityCreateEmptyOrderedElements()
-
+    
+    internal let barCornerRadius = CGFloat(10.0)
+    
     private class Buffer
     {
         var rects = [CGRect]()
@@ -378,6 +380,10 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
 
         let buffer = _buffers[index]
         
+        // In case the chart is stacked, we need to accomodate individual bars within accessibilityOrdereredElements
+        let isStacked = dataSet.isStacked
+        let stackSize = isStacked ? dataSet.stackSize : 1
+        
         // draw the bar shadow before the values
         if dataProvider.isDrawBarShadowEnabled
         {
@@ -396,7 +402,23 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 }
                 
                 context.setFillColor(dataSet.barShadowColor.cgColor)
-                context.fill(barRect)
+                
+                if stackSize > 1
+                {
+                    //я не учиваю сейчас, что stack может быть из более двух элементов
+                    let corners: UIRectCorner = j % stackSize == 0 ? [.bottomLeft, .bottomRight] : [.topLeft, .topRight]
+                    let bezierPath = UIBezierPath(roundedRect: barRect,
+                                                  byRoundingCorners: corners,
+                                                  cornerRadii: CGSize(width: barCornerRadius, height: barCornerRadius))
+                    context.addPath(bezierPath.cgPath)
+                }
+                else
+                {
+                    let bezierPath = UIBezierPath(roundedRect: barRect, cornerRadius: barCornerRadius)
+                    context.addPath(bezierPath.cgPath)
+                }
+                
+                context.drawPath(using: .fill)
             }
         }
         
@@ -406,11 +428,7 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
         {
             context.setFillColor(dataSet.color(atIndex: 0).cgColor)
         }
-
-        // In case the chart is stacked, we need to accomodate individual bars within accessibilityOrdereredElements
-        let isStacked = dataSet.isStacked
-        let stackSize = isStacked ? dataSet.stackSize : 1
-
+        
         for j in stride(from: 0, to: buffer.rects.count, by: 1)
         {
             let barRect = buffer.rects[j]
@@ -431,7 +449,22 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 context.setFillColor(dataSet.color(atIndex: j).cgColor)
             }
             
-            context.fill(barRect)
+            if stackSize > 1
+            {
+                //я не учиваю сейчас, что stack может быть из более двух элементов
+                let corners: UIRectCorner = j % stackSize == 0 ? [.bottomLeft, .bottomRight] : [.topLeft, .topRight]
+                let bezierPath = UIBezierPath(roundedRect: barRect,
+                                              byRoundingCorners: corners,
+                                              cornerRadii: CGSize(width: barCornerRadius, height: barCornerRadius))
+                context.addPath(bezierPath.cgPath)
+            }
+            else
+            {
+                let bezierPath = UIBezierPath(roundedRect: barRect, cornerRadius: barCornerRadius)
+                context.addPath(bezierPath.cgPath)
+            }
+            
+            context.drawPath(using: .fill)
             
             if drawBorder
             {
@@ -720,8 +753,8 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                                         align: .center,
                                         color: dataSet.valueTextColorAt(index))
                                 }
-                                
-                                if let icon = e.icon, dataSet.isDrawIconsEnabled
+                                //рисуем иконку только для самого верхнего элемента (k == transformed.count - 1)
+                                if let icon = e.icon, dataSet.isDrawIconsEnabled, k == transformed.count - 1
                                 {
                                     ChartUtils.drawImage(
                                         context: context,
@@ -811,7 +844,16 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 
                 setHighlightDrawPos(highlight: high, barRect: barRect)
                 
-                context.fill(barRect)
+                barRect.origin.x = barRect.origin.x + (barRect.width * 0.5) - 0.5
+                barRect.size.width = 1
+                if barRect.height > 2 {
+                    barRect.size.height -= 2
+                }
+                
+                let bezierPath = UIBezierPath(roundedRect: barRect, cornerRadius: 1)
+                context.addPath(bezierPath.cgPath)
+                
+                context.drawPath(using: .fill)
             }
         }
         

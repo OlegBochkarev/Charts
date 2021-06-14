@@ -138,8 +138,8 @@ open class AxisBase: ComponentBase
         for i in 0 ..< entries.count
         {
             let text = getFormattedLabel(i)
-            
-            if longest.count < text.count
+            //!text.contains("\n\n") - это хак для определения строки вида 0,0\n\nkm
+            if longest.count < text.count && !text.contains("\n\n")
             {
                 longest = text
             }
@@ -192,7 +192,7 @@ open class AxisBase: ComponentBase
     @objc open var isDrawLabelsEnabled: Bool { return drawLabelsEnabled }
     
     /// Are the LimitLines drawn behind the data or in front of the data?
-    /// 
+    ///
     /// **default**: false
     @objc open var isDrawLimitLinesBehindDataEnabled: Bool { return drawLimitLinesBehindDataEnabled }
     

@@ -87,13 +87,13 @@ open class YAxis: AxisBase
     private var _axisDependency = AxisDependency.left
     
     /// the minimum width that the axis should take
-    /// 
+    ///
     /// **default**: 0.0
     @objc open var minWidth = CGFloat(0)
     
     /// the maximum width that the axis can take.
     /// use Infinity for disabling the maximum.
-    /// 
+    ///
     /// **default**: CGFloat.infinity
     @objc open var maxWidth = CGFloat(CGFloat.infinity)
     
@@ -151,7 +151,8 @@ open class YAxis: AxisBase
     open override func calculate(min dataMin: Double, max dataMax: Double)
     {
         // if custom, use value as is, else use data value
-        var min = _customAxisMin ? _axisMinimum : dataMin
+        // мы используем 0 как минимум всегда!
+        var min: Double = 0 // _customAxisMin ? _axisMinimum : dataMin
         var max = _customAxisMax ? _axisMaximum : dataMax
         
         // Make sure max is greater than min
@@ -172,21 +173,23 @@ open class YAxis: AxisBase
         }
         
         // temporary range (before calculations)
-        let range = abs(max - min)
+        var range = abs(max - min)
         
         // in case all values are equal
         if range == 0.0
         {
             max = max + 1.0
-            min = min - 1.0
+//            min = min - 1.0
+            range = abs(max - min)
         }
         
+        //нам не нужна эта проверка. Мы хотим чтобы bottomSpace применялся всегда!
         // bottom-space only effects non-custom min
-        if !_customAxisMin
-        {
+//        if !_customAxisMin
+//        {
             let bottomSpace = range * Double(spaceBottom)
             _axisMinimum = (min - bottomSpace)
-        }
+//        }
         
         // top-space only effects non-custom max
         if !_customAxisMax
